@@ -3,6 +3,8 @@ language: go
 go:
   - 1.9
 
+go_import_path: github.com/GoogleCloudPlatform/container-engine-accelerators
+
 script:
   - make presubmit
   - make test
