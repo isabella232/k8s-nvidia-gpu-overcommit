@@ -101,20 +101,20 @@ func TestNvidiaGPUManagerMultuipleAPIs(t *testing.T) {
 	for _, d := range devs.Devices {
 		devices[d.ID] = d
 	}
-	as.NotNil(devices["nvidia1"])
-	as.NotNil(devices["nvidia2"])
+	as.NotNil(devices["nvidia1-0"])
+	as.NotNil(devices["nvidia2-0"])
 
 	// Tests Beta Allocate
 	resp, err := clientBeta.Allocate(context.Background(), &pluginbeta.AllocateRequest{
 		ContainerRequests: []*pluginbeta.ContainerAllocateRequest{
-			{DevicesIDs: []string{"nvidia1"}}}})
+			{DevicesIDs: []string{"nvidia1-0"}}}})
 	as.Nil(err)
 	as.Len(resp.ContainerResponses, 1)
 	as.Len(resp.ContainerResponses[0].Devices, 4)
 	as.Len(resp.ContainerResponses[0].Mounts, 2)
 	resp, err = clientBeta.Allocate(context.Background(), &pluginbeta.AllocateRequest{
 		ContainerRequests: []*pluginbeta.ContainerAllocateRequest{
-			{DevicesIDs: []string{"nvidia1", "nvidia2"}}}})
+			{DevicesIDs: []string{"nvidia1-0", "nvidia2-0"}}}})
 	as.Nil(err)
 	var retDevices []string
 	for _, dev := range resp.ContainerResponses[0].Devices {
@@ -127,7 +127,7 @@ func TestNvidiaGPUManagerMultuipleAPIs(t *testing.T) {
 	as.Contains(retDevices, testNvidiaUVMToolsDevice)
 	resp, err = clientBeta.Allocate(context.Background(), &pluginbeta.AllocateRequest{
 		ContainerRequests: []*pluginbeta.ContainerAllocateRequest{
-			{DevicesIDs: []string{"nvidia1", "nvidia3"}}}})
+			{DevicesIDs: []string{"nvidia1-0", "nvidia3-0"}}}})
 	as.Nil(resp)
 	as.NotNil(err)
 
@@ -140,6 +140,6 @@ func TestNvidiaGPUManagerMultuipleAPIs(t *testing.T) {
 	for _, d := range devs2.Devices {
 		devices2[d.ID] = d
 	}
-	as.NotNil(devices2["nvidia1"])
-	as.NotNil(devices2["nvidia2"])
+	as.NotNil(devices2["nvidia1-0"])
+	as.NotNil(devices2["nvidia2-0"])
 }
