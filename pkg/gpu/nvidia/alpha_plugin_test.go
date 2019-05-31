@@ -91,7 +91,7 @@ func TestNvidiaGPUManagerAlphaAPI(t *testing.T) {
 	mountPaths := []MountPath{
 		{HostPath: "/home/kubernetes/bin/nvidia", ContainerPath: "/usr/local/nvidia"},
 		{HostPath: "/home/kubernetes/bin/vulkan/icd.d", ContainerPath: "/etc/vulkan/icd.d"}}
-	testGpuManager := NewNvidiaGPUManager(testDevDir, mountPaths)
+	testGpuManager := NewNvidiaGPUManager(testDevDir, mountPaths, 1)
 	as := assert.New(t)
 	as.NotNil(testGpuManager)
 
@@ -161,13 +161,13 @@ func TestNvidiaGPUManagerAlphaAPI(t *testing.T) {
 
 	// Tests Allocate
 	resp, err := client.Allocate(context.Background(), &pluginapi.AllocateRequest{
-		DevicesIDs: []string{"nvidia1"},
+		DevicesIDs: []string{"nvidia1-0"},
 	})
 	as.Nil(err)
 	as.Len(resp.Devices, 4)
 	as.Len(resp.Mounts, 2)
 	resp, err = client.Allocate(context.Background(), &pluginapi.AllocateRequest{
-		DevicesIDs: []string{"nvidia1", "nvidia2"},
+		DevicesIDs: []string{"nvidia1-0", "nvidia2-0"},
 	})
 	as.Nil(err)
 	var retDevices []string
@@ -180,7 +180,7 @@ func TestNvidiaGPUManagerAlphaAPI(t *testing.T) {
 	as.Contains(retDevices, testNvidiaUVMDevice)
 	as.Contains(retDevices, testNvidiaUVMToolsDevice)
 	resp, err = client.Allocate(context.Background(), &pluginapi.AllocateRequest{
-		DevicesIDs: []string{"nvidia1", "nvidia3"},
+		DevicesIDs: []string{"nvidia1-0", "nvidia3-0"},
 	})
 	as.Nil(resp)
 	as.NotNil(err)
@@ -193,7 +193,7 @@ func TestNvidiaGPUManagerAlphaAPI(t *testing.T) {
 	time.Sleep(gpuCheckInterval + 1*time.Second)
 
 	resp, err = client.Allocate(context.Background(), &pluginapi.AllocateRequest{
-		DevicesIDs: []string{"nvidia3"},
+		DevicesIDs: []string{"nvidia3-0"},
 	})
 	as.Nil(err)
 	for _, dev := range resp.Devices {

@@ -15,6 +15,7 @@
 package nvidia
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -47,14 +48,15 @@ var (
 
 // nvidiaGPUManager manages nvidia gpu devices.
 type nvidiaGPUManager struct {
-	devDirectory   string
-	mountPaths     []MountPath
-	defaultDevices []string
-	devices        map[string]pluginapi.Device
-	grpcServer     *grpc.Server
-	socket         string
-	stop           chan bool
-	devicesMutex   sync.Mutex
+	devDirectory       string
+	mountPaths         []MountPath
+	defaultDevices     []string
+	devices            map[string]pluginapi.Device
+	grpcServer         *grpc.Server
+	socket             string
+	stop               chan bool
+	devicesMutex       sync.Mutex
+	overCommitMultiply int
 }
 
 type MountPath struct {
@@ -62,12 +64,13 @@ type MountPath struct {
 	ContainerPath string
 }
 
-func NewNvidiaGPUManager(devDirectory string, mountPaths []MountPath) *nvidiaGPUManager {
+func NewNvidiaGPUManager(devDirectory string, mountPaths []MountPath, overCommitMultiply int) *nvidiaGPUManager {
 	return &nvidiaGPUManager{
-		devDirectory: devDirectory,
-		mountPaths:   mountPaths,
-		devices:      make(map[string]pluginapi.Device),
-		stop:         make(chan bool),
+		devDirectory:       devDirectory,
+		mountPaths:         mountPaths,
+		devices:            make(map[string]pluginapi.Device),
+		stop:               make(chan bool),
+		overCommitMultiply: overCommitMultiply,
 	}
 }
 
@@ -78,13 +81,15 @@ func (ngm *nvidiaGPUManager) discoverGPUs() error {
 	if err != nil {
 		return err
 	}
-	for _, f := range files {
-		if f.IsDir() {
-			continue
-		}
-		if reg.MatchString(f.Name()) {
-			glog.Infof("Found Nvidia GPU %q\n", f.Name())
-			ngm.setDevice(f.Name(), pluginapi.Healthy)
+	for i := 0; i < ngm.overCommitMultiply; i++ {
+		for _, f := range files {
+			if f.IsDir() {
+				continue
+			}
+			if reg.MatchString(f.Name()) {
+				glog.Infof("Found Nvidia GPU %q\n", f.Name())
+				ngm.setDevice(f.Name(), pluginapi.Healthy, i)
+			}
 		}
 	}
 	return nil
@@ -118,15 +123,18 @@ func (ngm *nvidiaGPUManager) discoverNumGPUs() (int, error) {
 			continue
 		}
 		if reg.MatchString(f.Name()) {
-			deviceCount++
+			deviceCount += ngm.overCommitMultiply
 		}
 	}
 	return deviceCount, nil
 }
 
-func (ngm *nvidiaGPUManager) setDevice(name string, health string) {
+func (ngm *nvidiaGPUManager) setDevice(name string, health string, index int) {
 	ngm.devicesMutex.Lock()
-	ngm.devices[name] = pluginapi.Device{ID: name, Health: health}
+
+	id := fmt.Sprintf("%s-%d", name, index)
+	ngm.devices[id] = pluginapi.Device{ID: id, Health: health}
+
 	ngm.devicesMutex.Unlock()
 }
 

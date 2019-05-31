@@ -38,7 +38,7 @@ func TestNvidiaGPUManagerBetaAPI(t *testing.T) {
 	mountPaths := []MountPath{
 		{HostPath: "/home/kubernetes/bin/nvidia", ContainerPath: "/usr/local/nvidia"},
 		{HostPath: "/home/kubernetes/bin/vulkan/icd.d", ContainerPath: "/etc/vulkan/icd.d"}}
-	testGpuManager := NewNvidiaGPUManager(testDevDir, mountPaths)
+	testGpuManager := NewNvidiaGPUManager(testDevDir, mountPaths, 1)
 	as := assert.New(t)
 	as.NotNil(testGpuManager)
 
@@ -99,20 +99,20 @@ func TestNvidiaGPUManagerBetaAPI(t *testing.T) {
 	for _, d := range devs.Devices {
 		devices[d.ID] = d
 	}
-	as.NotNil(devices["nvidia1"])
-	as.NotNil(devices["nvidia2"])
+	as.NotNil(devices["nvidia1-0"])
+	as.NotNil(devices["nvidia2-0"])
 
 	// Tests Allocate
 	resp, err := client.Allocate(context.Background(), &pluginapi.AllocateRequest{
 		ContainerRequests: []*pluginapi.ContainerAllocateRequest{
-			{DevicesIDs: []string{"nvidia1"}}}})
+			{DevicesIDs: []string{"nvidia1-0"}}}})
 	as.Nil(err)
 	as.Len(resp.ContainerResponses, 1)
 	as.Len(resp.ContainerResponses[0].Devices, 4)
 	as.Len(resp.ContainerResponses[0].Mounts, 2)
 	resp, err = client.Allocate(context.Background(), &pluginapi.AllocateRequest{
 		ContainerRequests: []*pluginapi.ContainerAllocateRequest{
-			{DevicesIDs: []string{"nvidia1", "nvidia2"}}}})
+			{DevicesIDs: []string{"nvidia1-0", "nvidia2-0"}}}})
 	as.Nil(err)
 	var retDevices []string
 	for _, dev := range resp.ContainerResponses[0].Devices {
@@ -125,7 +125,7 @@ func TestNvidiaGPUManagerBetaAPI(t *testing.T) {
 	as.Contains(retDevices, testNvidiaUVMToolsDevice)
 	resp, err = client.Allocate(context.Background(), &pluginapi.AllocateRequest{
 		ContainerRequests: []*pluginapi.ContainerAllocateRequest{
-			{DevicesIDs: []string{"nvidia1", "nvidia3"}}}})
+			{DevicesIDs: []string{"nvidia1-0", "nvidia3-0"}}}})
 	as.Nil(resp)
 	as.NotNil(err)
 
@@ -138,7 +138,7 @@ func TestNvidiaGPUManagerBetaAPI(t *testing.T) {
 
 	resp, err = client.Allocate(context.Background(), &pluginapi.AllocateRequest{
 		ContainerRequests: []*pluginapi.ContainerAllocateRequest{
-			{DevicesIDs: []string{"nvidia3"}}}})
+			{DevicesIDs: []string{"nvidia3-0"}}}})
 	as.Nil(err)
 
 	for _, dev := range resp.ContainerResponses[0].Devices {

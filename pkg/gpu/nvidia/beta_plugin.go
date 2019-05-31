@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -62,6 +63,7 @@ func (s *pluginServiceV1Beta1) Allocate(ctx context.Context, requests *pluginapi
 		resp := new(pluginapi.ContainerAllocateResponse)
 		// Add all requested devices to Allocate Response
 		for _, id := range rqt.DevicesIDs {
+			realID := strings.Split(id, "-")[0]
 			dev, ok := s.ngm.devices[id]
 			if !ok {
 				return nil, fmt.Errorf("invalid allocation request with non-existing device %s", id)
@@ -70,8 +72,8 @@ func (s *pluginServiceV1Beta1) Allocate(ctx context.Context, requests *pluginapi
 				return nil, fmt.Errorf("invalid allocation request with unhealthy device %s", id)
 			}
 			resp.Devices = append(resp.Devices, &pluginapi.DeviceSpec{
-				HostPath:      path.Join(s.ngm.devDirectory, id),
-				ContainerPath: path.Join(s.ngm.devDirectory, id),
+				HostPath:      path.Join(s.ngm.devDirectory, realID),
+				ContainerPath: path.Join(s.ngm.devDirectory, realID),
 				Permissions:   "mrw",
 			})
 		}
