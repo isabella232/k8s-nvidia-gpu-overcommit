@@ -1,15 +1,19 @@
 language: go
-
 go:
-  - 1.9
-
+  - '1.12.x'
 go_import_path: github.com/GoogleCloudPlatform/container-engine-accelerators
 
-script:
-  - make presubmit
-  - make test
+stages:
+  - name: test
+  - name: release
+    if: tag IS present
 
-notifications:
-  email:
-    on_success: never
-    on_failure: never
+jobs:
+  include:
+    - name: 'Unit tests'
+      stage: test
+      script: make test
+    - name: 'Push image to Docker Hub'
+      stage: release
+      script:
+        - DOCKER_PUSH_LATEST=true make docker-push
